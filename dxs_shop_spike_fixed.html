@@ -266,15 +266,15 @@
             line-height: 1.4;
         }
 
-       /* Пасхалка (исправленная версия) */
+       /* Пасхалка с исправленным позиционированием */
 #brawl-easter-egg {
-    position: fixed;
+    position: absolute;
     bottom: -120px;
     left: 50%;
     transform: translateX(-50%);
-    width: 220px;
-    height: 110px;
-    background-image: url("https://clipart-library.com/8300/1931/socks-emoji-2048x1956-l930rja5.png");
+    width: 120px;
+    height: 120px;
+    background-image: url('https://clipart-library.com/8300/1931/socks-emoji-2048x1956-l930rja5.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center bottom;
@@ -283,12 +283,11 @@
     transition: bottom 0.55s cubic-bezier(0.22, 1, 0.36, 1);
     z-index: 2000;
     pointer-events: none;
-    will-change: transform, bottom;
 }
 #brawl-easter-egg.show {
-    bottom: 0;
-    transform: translateX(-50%) translateY(0);
+    bottom: 20px; /* Отступ от низа контейнера */
 }
+
 /* тонкий "разрыв" у края, чтобы выглядело как кусочек текстуры */
 #brawl-easter-egg::after {
     content: '';
@@ -891,13 +890,13 @@ function triggerBrawlEgg() {
     const fullHeight = document.documentElement.scrollHeight;
 
     // Показываем только когда доскроллили до самого конца
-    if (scrollPos >= fullHeight - 10) { // -10px для небольшого допуска
+    if (scrollPos >= fullHeight - 10) {
         const el = document.getElementById('brawl-easter-egg');
         if (el) {
             el.classList.add('show');
             brawlEggTriggered = true;
         }
-    } else if (brawlEggTriggered && scrollPos < fullHeight - 50) {
+    } else if (brawlEggTriggered && scrollPos < fullHeight - 100) {
         // Скрываем если поднялись достаточно высоко от низа
         const el = document.getElementById('brawl-easter-egg');
         if (el) {
@@ -907,11 +906,33 @@ function triggerBrawlEgg() {
     }
 }
 
-function hideBrawlEgg() {
-    const el = document.getElementById('brawl-easter-egg');
-    if (el) {
-        el.classList.remove('show');
-        brawlEggTriggered = false;
+// Слушаем скролл для управления пасхалкой
+window.addEventListener('scroll', triggerBrawlEgg);// --- Пасхалка (исправленная версия) ---
+let brawlEggTriggered = false;
+
+function triggerBrawlEgg() {
+    if (brawlEggTriggered) return;
+
+    // Показываем только на мобильных
+    if (window.innerWidth > 768) return;
+
+    const scrollPos = window.scrollY + window.innerHeight;
+    const fullHeight = document.documentElement.scrollHeight;
+
+    // Показываем только когда доскроллили до самого конца
+    if (scrollPos >= fullHeight - 10) {
+        const el = document.getElementById('brawl-easter-egg');
+        if (el) {
+            el.classList.add('show');
+            brawlEggTriggered = true;
+        }
+    } else if (brawlEggTriggered && scrollPos < fullHeight - 100) {
+        // Скрываем если поднялись достаточно высоко от низа
+        const el = document.getElementById('brawl-easter-egg');
+        if (el) {
+            el.classList.remove('show');
+            brawlEggTriggered = false;
+        }
     }
 }
 
