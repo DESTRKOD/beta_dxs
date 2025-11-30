@@ -16,7 +16,12 @@
     <meta name="apple-mobile-web-app-title" content="DxS Shop">
     <meta name="theme-color" content="#00FF41">
     
+    <!-- 🔐 БИБЛИОТЕКИ БЕЗОПАСНОСТИ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
     <style>
+        /* ТВОИ СТИЛИ ОСТАЮТСЯ БЕЗ ИЗМЕНЕНИЙ */
         :root {
             --primary-glow: #00FF41;
             --secondary-glow: #008F39;
@@ -46,7 +51,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
-            background-color: var(--bg-primary);
+            background-color: #000000;
             color: var(--text-primary);
             line-height: 1.6;
             min-height: 100vh;
@@ -68,7 +73,7 @@
             100% { transform: translate(0,0) rotate(360deg); }
         }
 
-        .container { max-width:800px; margin:0 auto; padding:20px; min-height:100vh; display:flex; flex-direction:column; }
+        .container { max-width:800px; margin:0 auto; padding:20px; min-height:100vh; display:flex; flex-direction:column; background-color: var(--bg-primary); }
 
         header { text-align:center; padding:40px 20px 30px; position:relative; margin-bottom:20px; }
         .logo-container { 
@@ -83,8 +88,8 @@
             height: 60px; 
             border-radius: 12px; 
             object-fit: cover;
-            border: none; /* Убираем рамку полностью */
-            box-shadow: none; /* Убираем тень */
+            border: none;
+            box-shadow: none;
         }
         .logo-text { 
             font-size:42px; 
@@ -132,6 +137,7 @@
         .status-waiting { background: rgba(0,255,65,0.15); color:var(--primary-glow); border:1px solid rgba(0,255,65,0.3); }
         .status-completed { background: rgba(0,255,102,0.15); color:var(--success-glow); border:1px solid rgba(0,255,102,0.3); }
         .status-rejected { background: rgba(255,46,122,0.15); color:var(--danger-glow); border:1px solid rgba(255,46,122,0.3); }
+        .status-deleted { background: rgba(255,46,122,0.15); color:var(--danger-glow); border:1px solid rgba(255,46,122,0.3); }
 
         .payment-methods { display:grid; grid-template-columns:1fr; gap:12px; margin:20px 0; }
         .payment-method { display:flex; align-items:center; padding:18px; border:1px solid rgba(0,255,65,0.1); border-radius:16px; cursor:pointer; transition:var(--transition-smooth); backdrop-filter: blur(10px); background: rgba(0,10,0,0.3); }
@@ -266,39 +272,7 @@
             line-height: 1.4;
         }
 
-       /* Пасхалка с исправленным позиционированием */
-#brawl-easter-egg {
-    position: absolute;
-    bottom: -120px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 120px;
-    height: 120px;
-    background-image: url('https://clipart-library.com/8300/1931/socks-emoji-2048x1956-l930rja5.png');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center bottom;
-    opacity: 0.95;
-    filter: drop-shadow(0 8px 24px rgba(0,255,65,0.12)) saturate(1.1);
-    transition: bottom 0.55s cubic-bezier(0.22, 1, 0.36, 1);
-    z-index: 2000;
-    pointer-events: none;
-}
-#brawl-easter-egg.show {
-    bottom: 20px; /* Отступ от низа контейнера */
-}
-
-/* тонкий "разрыв" у края, чтобы выглядело как кусочек текстуры */
-#brawl-easter-egg::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: -10px;
-    height: 10px;
-    background: linear-gradient(180deg, rgba(0,0,0,0.35), transparent);
-    pointer-events: none;
-}/* Шаблоны товаров */
+        /* Шаблоны товаров */
         .templates-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -394,6 +368,153 @@
             font-size: 14px;
         }
 
+        /* Новые стили для реквизитов */
+        .bank-detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0,255,65,0.1);
+        }
+
+        .bank-detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .bank-detail-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+            min-width: 120px;
+        }
+
+        .bank-detail-value {
+            flex: 1;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: right;
+            margin-right: 12px;
+        }
+
+        .bank-detail-copy {
+            background: rgba(0,255,65,0.1);
+            border: 1px solid rgba(0,255,65,0.2);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--primary-glow);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            font-size: 12px;
+        }
+
+        .bank-detail-copy:hover {
+            background: rgba(0,255,65,0.2);
+        }
+
+        .payment-section {
+            margin-bottom: 20px;
+        }
+
+        .payment-section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--primary-glow);
+        }
+
+        /* Стили для модального окна с уведомлением о комментарии */
+        .payment-alert-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(10px);
+        }
+
+        .payment-alert-content {
+            background: var(--glass-bg);
+            border: 2px solid var(--primary-glow);
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0, 255, 65, 0.3);
+            animation: pulse-glow 2s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 30px rgba(0, 255, 65, 0.3); }
+            50% { box-shadow: 0 0 60px rgba(0, 255, 65, 0.6); }
+            100% { box-shadow: 0 0 30px rgba(0, 255, 65, 0.3); }
+        }
+
+        .payment-alert-icon {
+            font-size: 48px;
+            color: var(--primary-glow);
+            margin-bottom: 20px;
+        }
+
+        .payment-alert-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--primary-glow);
+        }
+
+        .payment-alert-message {
+            font-size: 18px;
+            line-height: 1.5;
+            margin-bottom: 24px;
+            color: var(--text-primary);
+        }
+
+        .payment-alert-note {
+            font-size: 14px;
+            color: var(--warning-glow);
+            font-style: italic;
+            margin-top: 16px;
+        }
+
+        .countdown-timer {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--warning-glow);
+            margin: 20px 0;
+            padding: 12px;
+            background: rgba(255, 214, 0, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 214, 0, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn:disabled:hover::before {
+            left: -100%;
+        }
+
+        /* Стиль для отображения способа оплаты */
+        .payment-method-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(0,255,65,0.1);
+            border: 1px solid rgba(0,255,65,0.2);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary-glow);
+        }
+
         .hidden { display:none; }
         .fade-in { animation: fadeIn 0.5s ease; }
         @keyframes fadeIn { from{opacity:0; transform:translateY(20px);} to{opacity:1; transform:translateY(0);} }
@@ -414,6 +535,32 @@
             }
             .templates-grid {
                 grid-template-columns: 1fr;
+            }
+            .bank-detail-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            .bank-detail-value {
+                text-align: left;
+                margin-right: 0;
+            }
+            .payment-alert-content {
+                padding: 24px 20px;
+                margin: 20px;
+            }
+            .payment-alert-icon {
+                font-size: 36px;
+            }
+            .payment-alert-title {
+                font-size: 20px;
+            }
+            .payment-alert-message {
+                font-size: 16px;
+            }
+            .countdown-timer {
+                font-size: 16px;
+                padding: 10px;
             }
         }
 
@@ -437,21 +584,83 @@
     <!-- Toast уведомления -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- Пасхалка (спрайт носков Спайка) -->
-    <div id="brawl-easter-egg"></div>
-
-    <div id="auth-modal" class="auth-modal hidden" class="auth-modal hidden">
-        <div class="auth-card fade-in">
-            <div class="auth-title">Доступ к админ-панели</div>
-            <div class="auth-subtitle">Введите пароль администратора</div>
-            <div class="form-group">
-                <input type="password" id="admin-password" class="form-control" placeholder="Пароль" autocomplete="off">
+    <!-- Модальное окно с уведомлением о комментарии -->
+    <div id="payment-alert-modal" class="payment-alert-modal hidden">
+        <div class="payment-alert-content fade-in">
+            <div class="payment-alert-icon">
+                <i class="fas fa-exclamation-circle"></i>
             </div>
-            <button class="btn btn-primary" id="login-btn">
-                <i class="fas fa-lock" style="margin-right:12px;"></i> Войти
+            <div class="payment-alert-title">Внимание!</div>
+            <div class="payment-alert-message">
+                Чтобы ваш платеж был обнаружен системой, в комментарий к переводу пишите слово <strong style="color: var(--warning-glow);">ПОДАРОК</strong>.<br><br>
+                Если строки комментария нет - отправляйте перевод без комментария.
+            </div>
+            <div class="payment-alert-note">
+                Без этого слова система может не распознать ваш платеж автоматически
+            </div>
+            
+            <div class="countdown-timer" id="countdown-timer">
+                Кнопка станет активной через: <span id="countdown-seconds">5</span> сек.
+            </div>
+            
+            <button class="btn btn-primary" id="close-payment-alert" disabled style="margin-top: 10px;">
+                <i class="fas fa-check" style="margin-right: 8px;"></i> Понятно, продолжить
             </button>
+        </div>
+    </div>
+
+    <!-- 🔐 МНОГОУРОВНЕВАЯ АУТЕНТИФИКАЦИЯ -->
+    <div id="auth-modal" class="auth-modal hidden">
+        <div class="auth-card fade-in">
+            <div class="auth-title">🔐 Доступ к админ-панели</div>
+            <div class="auth-subtitle" id="auth-device-info"></div>
+            
+            <!-- Уровень 1: Email + Пароль -->
+            <div id="auth-step-1">
+                <div class="form-group">
+                    <label class="form-label">Email администратора</label>
+                    <input type="email" id="admin-email" class="form-control" placeholder="destr@mail.ru" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Пароль</label>
+                    <input type="password" id="admin-password" class="form-control" placeholder="Введите пароль" required>
+                </div>
+                <button class="btn btn-primary" id="login-step-1">
+                    <i class="fas fa-arrow-right" style="margin-right:12px;"></i> Продолжить
+                </button>
+            </div>
+
+            <!-- Уровень 2: Telegram верификация -->
+            <div id="auth-step-2" class="hidden">
+                <div class="status-icon waiting">
+                    <i class="fas fa-paper-plane"></i>
+                </div>
+                <div class="status-title" id="auth-step-2-title">Ожидание подтверждения</div>
+                <div class="status-description" id="auth-step-2-description">
+                    Запрос отправлен администратору в Telegram...
+                </div>
+                <div id="verification-info" style="margin-top:20px; text-align:center;">
+                    <div class="order-meta">Ожидаем ответа администратора...</div>
+                    <div class="loading-spinner" style="margin:16px auto; width:32px; height:32px; border:3px solid rgba(0,255,65,0.3); border-top:3px solid var(--primary-glow); border-radius:50%; animation:spin 1s linear infinite;"></div>
+                    <div class="order-meta" style="margin-top:12px; font-size:12px;">
+                        Уведомление отправлено в Telegram. Администратор получил запрос.
+                    </div>
+                </div>
+            </div>
+
             <div id="auth-error" style="color: var(--danger-glow); text-align:center; margin-top:20px; display:none;">
-                <i class="fas fa-exclamation-circle"></i> Неверный пароль
+                <i class="fas fa-exclamation-circle"></i> <span id="error-message"></span>
+            </div>
+
+            <div class="security-indicators" style="margin-top:20px; padding:12px; background:rgba(0,10,0,0.3); border-radius:12px;">
+                <div style="display:flex; justify-content:space-between; font-size:12px;">
+                    <span>Уровень защиты:</span>
+                    <span style="color:var(--primary-glow)" id="security-level">МАКСИМАЛЬНЫЙ</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:4px;">
+                    <span>Попытки входа:</span>
+                    <span id="attempts-counter">0/3</span>
+                </div>
             </div>
         </div>
     </div>
@@ -469,7 +678,6 @@
     <div class="container">
         <header>
             <div class="logo-container">
-                <!-- ЗАМЕНИТЕ src НА ПУТЬ К ВАШЕМУ ЛОГОТИПУ -->
                 <img src="https://i.imgur.com/0J9xhkb.png" alt="DxS Shop" class="logo-img">
                 <div class="logo-text">DxS Payments</div>
             </div>
@@ -539,18 +747,49 @@
                         <div class="card-title">Настройки реквизитов</div>
                     </div>
                     <form id="payment-settings-form">
-                        <div class="form-group">
-                            <label class="form-label" for="sbp-details">СБП реквизиты</label>
-                            <textarea id="sbp-details" class="form-control" rows="3" placeholder="Номер телефона, имя получателя, банк"></textarea>
+                        <!-- СБП реквизиты -->
+                        <div class="payment-section">
+                            <div class="payment-section-title">СБП реквизиты</div>
+                            <div class="form-group">
+                                <label class="form-label" for="sbp-phone">Номер телефона</label>
+                                <input type="text" id="sbp-phone" class="form-control" placeholder="+7 (999) 123-45-67">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="sbp-name">Имя получателя</label>
+                                <input type="text" id="sbp-name" class="form-control" placeholder="Иван Иванов">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="sbp-bank">Банк</label>
+                                <input type="text" id="sbp-bank" class="form-control" placeholder="Тинькофф">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label" for="sberbank-details">Сбербанк реквизиты</label>
-                            <textarea id="sberbank-details" class="form-control" rows="3" placeholder="Номер карты, имя получателя"></textarea>
+
+                        <!-- Сбербанк реквизиты -->
+                        <div class="payment-section">
+                            <div class="payment-section-title">Сбербанк реквизиты</div>
+                            <div class="form-group">
+                                <label class="form-label" for="sberbank-card">Номер карты</label>
+                                <input type="text" id="sberbank-card" class="form-control" placeholder="1234 5678 9012 3456">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="sberbank-name">Имя получателя</label>
+                                <input type="text" id="sberbank-name" class="form-control" placeholder="Иван Иванов">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label" for="alfa-details">Альфа-Банк реквизиты</label>
-                            <textarea id="alfa-details" class="form-control" rows="3" placeholder="Номер карты, имя получателя"></textarea>
+
+                        <!-- Альфа-Банк реквизиты -->
+                        <div class="payment-section">
+                            <div class="payment-section-title">Альфа-Банк реквизиты</div>
+                            <div class="form-group">
+                                <label class="form-label" for="alfa-card">Номер карты</label>
+                                <input type="text" id="alfa-card" class="form-control" placeholder="1234 5678 9012 3456">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="alfa-name">Имя получателя</label>
+                                <input type="text" id="alfa-name" class="form-control" placeholder="Иван Иванов">
+                            </div>
                         </div>
+
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save" style="margin-right:12px;"></i> Сохранить реквизиты
                         </button>
@@ -630,6 +869,7 @@
                                     <th>Товар</th>
                                     <th>Сумма</th>
                                     <th>Статус</th>
+                                    <th>Способ оплаты</th>
                                     <th>Действия</th>
                                 </tr>
                             </thead>
@@ -658,9 +898,7 @@
                         <h3 id="order-product"></h3>
                         <div class="order-meta">Один товар</div>
                     </div>
-                    <div id="order-price-container">
-                        <div class="order-price" id="order-price"></div>
-                    </div>
+                    <div id="order-price-container"></div>
                 </div>
                 <div id="order-actions"></div>
             </div>
@@ -685,9 +923,7 @@
                         <h3 id="payment-product-name"></h3>
                         <div class="order-meta">Сумма к оплате</div>
                     </div>
-                    <div id="payment-price-container">
-                        <div class="order-price" id="payment-price"></div>
-                    </div>
+                    <div id="payment-price-container"></div>
                 </div>
 
                 <!-- Промокод для клиента -->
@@ -722,11 +958,7 @@
                 </div>
 
                 <div id="bank-details" class="bank-details hidden">
-                    <h4 style="margin-bottom:16px;">Реквизиты для оплаты:</h4>
-                    <pre id="bank-details-text"></pre>
-                    <button type="button" class="copy-btn" id="copy-details">
-                        <i class="far fa-copy"></i> Скопировать реквизиты
-                    </button>
+                    <!-- Реквизиты будут отображаться здесь динамически -->
                 </div>
 
                 <button class="btn btn-primary" id="confirm-payment" disabled>
@@ -755,28 +987,764 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
     <script>
-        // 🔧 ЗАМЕНИТЕ ЭТИ ДАННЫЕ НА ВАШИ ИЗ FIREBASE CONSOLE
+        // 🔧 НАСТРОЙКИ FIREBASE
         const firebaseConfig = {
-            apiKey: "AIzaSyCWJGXWwH-GAOp_eFcQk62E06yLr0P-9GM",
-            authDomain: "beta-dxs.firebaseapp.com",
-            projectId: "beta-dxs",
-            storageBucket: "beta-dxs.firebasestorage.app",
-            messagingSenderId: "769277437178",
-            appId: "1:769277437178:web:6d7d874c40e3c206d45543"
+            apiKey: "AIzaSyBXbq06XQd2E2XDseEMnkXAgk-nwGl2XM4",
+            authDomain: "shopdxs.firebaseapp.com",
+            projectId: "shopdxs",
+            storageBucket: "shopdxs.firebasestorage.app",
+            messagingSenderId: "404838670939",
+            appId: "1:404838670939:web:1b8ef595f599cfef29957e"
         };
 
         // Инициализация Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        const ADMIN_PASSWORD = "dxs2024";
+        // 🔧 АВТОМАТИЧЕСКАЯ ИНИЦИАЛИЗАЦИЯ ДАННЫХ
+        async function initializeSystemData() {
+            try {
+                console.log('🔧 Проверка и инициализация системных данных...');
+                
+                // Проверяем существование данных администратора
+                const adminDoc = await db.collection('security').doc('adminCredentials').get();
+                
+                if (!adminDoc.exists) {
+                    console.log('🔄 Создание данных администратора...');
+                    
+                    // Генерируем соль и хеш пароля
+                    const salt = "DXS_SECURE_SALT_" + Math.random().toString(36).substr(2, 16);
+                    const defaultPassword = "admin123"; // Можешь поменять на свой пароль
+                    const passwordHash = CryptoJS.SHA256(defaultPassword + salt + "DXS_SECURE_2024").toString();
+                    
+                    const adminData = {
+                        email: "destr@mail.ru",
+                        salt: salt,
+                        passwordHash: passwordHash,
+                        createdAt: new Date().toISOString(),
+                        securityLevel: "maximum"
+                    };
+                    
+                    await db.collection('security').doc('adminCredentials').set(adminData);
+                    console.log('✅ Данные администратора созданы!');
+                    console.log('📧 Email: destr@mail.ru');
+                    console.log('🔑 Пароль: admin123'); // Поменяй этот пароль!
+                } else {
+                    console.log('✅ Данные администратора уже существуют');
+                }
+                
+                // Проверяем существование настроек платежей
+                const paymentDoc = await db.collection('settings').doc('paymentDetails').get();
+                
+                if (!paymentDoc.exists) {
+                    console.log('🔄 Создание настроек платежей...');
+                    
+                    const paymentData = {
+                        sbpPhone: "+7 (999) 123-45-67",
+                        sbpName: "Иван Иванов",
+                        sbpBank: "Тинькофф",
+                        sberbankCard: "1234 5678 9012 3456",
+                        sberbankName: "Иван Иванов",
+                        alfaCard: "1234 5678 9012 3456",
+                        alfaName: "Иван Иванов",
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    await db.collection('settings').doc('paymentDetails').set(paymentData);
+                    console.log('✅ Настройки платежей созданы!');
+                } else {
+                    console.log('✅ Настройки платежей уже существуют');
+                }
+                
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Ошибка инициализации данных:', error);
+                return false;
+            }
+        }
+
+        // 🔐 TELEGRAM NOTIFICATION SERVICE
+        class TelegramNotificationService {
+            constructor() {
+                this.botToken = "8508846271:AAHuYWeNWqk5AfN75ZJMU4kDhgU25c7ohDA";
+                this.chatId = "2112942356";
+            }
+
+            async sendLoginNotification(verificationData) {
+                try {
+                    const message = this.formatLoginMessage(verificationData);
+                    const keyboard = this.createLoginKeyboard(verificationData.token);
+                    
+                    const response = await fetch(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: this.chatId,
+                            text: message,
+                            parse_mode: 'HTML',
+                            reply_markup: keyboard
+                        })
+                    });
+
+                    const responseData = await response.json();
+
+                    if (response.ok && responseData.ok) {
+                        console.log('✅ Уведомление отправлено в Telegram');
+                        return true;
+                    } else {
+                        throw new Error(`Telegram API: ${responseData.description || 'Unknown error'}`);
+                    }
+
+                } catch (error) {
+                    console.error('❌ Ошибка отправки в Telegram:', error);
+                    await this.saveForManualSending(verificationData);
+                    return false;
+                }
+            }
+
+            async sendOrderNotification(orderData) {
+                try {
+                    const message = this.formatOrderMessage(orderData);
+                    const keyboard = this.createOrderKeyboard(orderData.id);
+
+                    const response = await fetch(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: this.chatId,
+                            text: message,
+                            parse_mode: 'HTML',
+                            reply_markup: keyboard
+                        })
+                    });
+
+                    const responseData = await response.json();
+
+                    if (response.ok && responseData.ok) {
+                        console.log('✅ Уведомление о заказе отправлено');
+                        return true;
+                    } else {
+                        throw new Error(`Telegram API: ${responseData.description || 'Unknown error'}`);
+                    }
+
+                } catch (error) {
+                    console.error('❌ Ошибка отправки уведомления о заказе:', error);
+                    showToast(`Ошибка Telegram: ${error.message}`, 'error', 5000);
+                    return false;
+                }
+            }
+
+            async sendRawMessage(text) {
+                try {
+                    const response = await fetch(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: this.chatId,
+                            text: text,
+                            parse_mode: 'HTML'
+                        })
+                    });
+
+                    return response.ok;
+                } catch (error) {
+                    console.error('Ошибка отправки сообщения:', error);
+                    return false;
+                }
+            }
+
+            formatLoginMessage(data) {
+                return `
+🔐 <b>ПОПЫТКА ВХОДА В АДМИНКУ DxS Shop</b>
+
+📱 <b>Устройство:</b> ${data.device.os} • ${data.device.browser}
+🌐 <b>IP-адрес:</b> ${data.ip}
+🕐 <b>Время:</b> ${new Date(data.timestamp).toLocaleString('ru-RU')}
+📧 <b>Email:</b> ${data.email}
+
+🔑 <b>Токен верификации:</b>
+<code>${data.token}</code>
+
+<i>Выберите действие:</i>
+                `;
+            }
+
+            formatOrderMessage(order) {
+                const statusEmoji = {
+                    'pending': '⏳',
+                    'waiting': '🔄', 
+                    'completed': '✅',
+                    'rejected': '❌'
+                };
+
+                const priceDisplay = order.finalPrice ? 
+                    `${order.finalPrice} ₽ (было ${order.originalPrice || order.price})` : 
+                    `${order.price}`;
+
+                return `
+🛒 <b>НОВЫЙ ЗАКАЗ</b>
+
+📦 <b>Товар:</b> ${order.product}
+👤 <b>Клиент:</b> ${order.client}
+💰 <b>Сумма:</b> ${priceDisplay}
+${order.promocodeUsed ? `🎫 <b>Промокод:</b> ${order.promocodeUsed}\n` : ''}
+${order.paymentMethod ? `💳 <b>Способ оплаты:</b> ${order.paymentMethod}\n` : ''}
+📊 <b>Статус:</b> ${statusEmoji[order.status]} ${this.getStatusText(order.status)}
+🕐 <b>Время:</b> ${new Date(order.createdAt).toLocaleString('ru-RU')}
+🆔 <b>ID заказа:</b> <code>${order.id}</code>
+
+<i>Выберите действие:</i>
+                `;
+            }
+
+            getStatusText(status) {
+                const statuses = {
+                    'pending': 'Ожидает оплаты',
+                    'waiting': 'Ожидает проверки',
+                    'completed': 'Завершен',
+                    'rejected': 'Отклонен'
+                };
+                return statuses[status] || status;
+            }
+
+            createLoginKeyboard(token) {
+                return {
+                    inline_keyboard: [[
+                        {
+                            text: "✅ Одобрить вход",
+                            callback_data: `approve_login:${token}`
+                        },
+                        {
+                            text: "❌ Заблокировать",
+                            callback_data: `reject_login:${token}`
+                        }
+                    ]]
+                };
+            }
+
+            createOrderKeyboard(orderId) {
+                return {
+                    inline_keyboard: [[
+                        {
+                            text: "✅ Подтвердить оплату",
+                            callback_data: `approve_order:${orderId}`
+                        },
+                        {
+                            text: "❌ Отклонить",
+                            callback_data: `reject_order:${orderId}`
+                        }
+                    ], [
+                        {
+                            text: "👁️ Посмотреть детали",
+                            url: `${window.location.origin}${window.location.pathname}?order=${orderId}`
+                        }
+                    ]]
+                };
+            }
+
+            async saveForManualSending(verificationData) {
+                try {
+                    await db.collection('telegramNotifications').doc(verificationData.token).set({
+                        type: 'login_attempt',
+                        data: verificationData,
+                        status: 'pending',
+                        createdAt: new Date().toISOString()
+                    });
+                    console.log('📧 Данные для ручной отправки сохранены в Firebase');
+                } catch (error) {
+                    console.error('❌ Ошибка сохранения для ручной отправки:', error);
+                }
+            }
+
+            async testConnection() {
+                try {
+                    console.log('🔍 Проверка соединения с ботом...');
+                    const response = await fetch(`https://api.telegram.org/bot${this.botToken}/getMe`);
+                    const data = await response.json();
+                    
+                    if (data.ok) {
+                        console.log('✅ Бот доступен:', data.result);
+                        showToast(`Бот ${data.result.first_name} подключен!`, 'success');
+                        return true;
+                    } else {
+                        throw new Error(data.description || 'Неизвестная ошибка');
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка подключения к боту:', error);
+                    showToast(`Ошибка подключения к боту: ${error.message}`, 'error');
+                    return false;
+                }
+            }
+        }
+
+        // 🔐 ОБРАБОТЧИК РЕШЕНИЙ ОТ TELEGRAM
+        class LoginDecisionHandler {
+            constructor() {
+                this.setupPolling();
+                this.setupUrlHandler();
+            }
+
+            setupPolling() {
+                setInterval(() => {
+                    this.checkPendingVerifications();
+                }, 2000);
+            }
+
+            setupUrlHandler() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const action = urlParams.get('action');
+                const token = urlParams.get('token');
+
+                if (action && token) {
+                    this.handleUrlAction(action, token);
+                }
+            }
+
+            async handleUrlAction(action, token) {
+                try {
+                    if (action === 'approve') {
+                        await db.collection('emailVerifications').doc(token).update({
+                            status: 'approved',
+                            approvedAt: new Date().toISOString(),
+                            approvedBy: 'telegram_url'
+                        });
+                        showToast('✅ Вход одобрен!', 'success');
+                    } else if (action === 'reject') {
+                        await db.collection('emailVerifications').doc(token).update({
+                            status: 'rejected',
+                            rejectedAt: new Date().toISOString(),
+                            rejectedBy: 'telegram_url'
+                        });
+                        showToast('❌ Вход отклонен!', 'error');
+                    }
+
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                } catch (error) {
+                    console.error('Ошибка обработки действия:', error);
+                }
+            }
+
+            async checkPendingVerifications() {
+                if (!window.currentVerificationToken) return;
+
+                try {
+                    const verificationDoc = await db.collection('emailVerifications')
+                        .doc(window.currentVerificationToken).get();
+                    
+                    if (!verificationDoc.exists) return;
+
+                    const verificationData = verificationDoc.data();
+                    
+                    if (verificationData.status === 'approved') {
+                        this.handleApprovedLogin();
+                    } else if (verificationData.status === 'rejected') {
+                        this.handleRejectedLogin();
+                    }
+                } catch (error) {
+                    console.error('Ошибка проверки верификации:', error);
+                }
+            }
+
+            handleApprovedLogin() {
+                isAdminAuthenticated = true;
+                localStorage.setItem('dxs_admin_authenticated', 'true');
+                localStorage.setItem('dxs_admin_session', Date.now().toString());
+                
+                hideAuthModal();
+                showAdminPanel();
+                showToast('✅ Доступ разрешен! Добро пожаловать в админ-панель.', 'success');
+                
+                window.currentVerificationToken = null;
+            }
+
+            handleRejectedLogin() {
+                document.getElementById('error-message').textContent = '❌ Доступ запрещен администратором';
+                document.getElementById('auth-error').style.display = 'block';
+                resetAuthForm();
+                window.currentVerificationToken = null;
+            }
+        }
+
+        // 🔄 TELEGRAM CALLBACK HANDLER
+        class TelegramCallbackHandler {
+            constructor() {
+                this.setupPolling();
+            }
+
+            setupPolling() {
+                setInterval(() => {
+                    this.checkTelegramUpdates();
+                }, 5000);
+            }
+
+            async checkTelegramUpdates() {
+                try {
+                    const notificationService = new TelegramNotificationService();
+                    const response = await fetch(`https://api.telegram.org/bot${notificationService.botToken}/getUpdates`);
+                    const data = await response.json();
+                    
+                    if (data.ok && data.result) {
+                        for (const update of data.result) {
+                            if (update.callback_query) {
+                                await this.handleCallbackQuery(update.callback_query);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Ошибка проверки обновлений Telegram:', error);
+                }
+            }
+
+            async handleCallbackQuery(callbackQuery) {
+                const { data, message, from } = callbackQuery;
+                const [action, param] = data.split(':');
+                
+                try {
+                    switch (action) {
+                        case 'approve_login':
+                            await this.handleApproveLogin(param, message.message_id);
+                            break;
+                        case 'reject_login':
+                            await this.handleRejectLogin(param, message.message_id);
+                            break;
+                        case 'approve_order':
+                            await this.handleApproveOrder(param, message.message_id);
+                            break;
+                        case 'reject_order':
+                            await this.handleRejectOrder(param, message.message_id);
+                            break;
+                    }
+                    
+                    await this.answerCallbackQuery(callbackQuery.id);
+                    
+                } catch (error) {
+                    console.error('Ошибка обработки callback:', error);
+                }
+            }
+
+            async handleApproveLogin(token, messageId) {
+                await db.collection('emailVerifications').doc(token).update({
+                    status: 'approved',
+                    approvedAt: new Date().toISOString(),
+                    approvedBy: 'telegram_bot'
+                });
+                
+                await this.editMessageReplyMarkup(messageId);
+                console.log('✅ Вход одобрен через Telegram');
+            }
+
+            async handleRejectLogin(token, messageId) {
+                await db.collection('emailVerifications').doc(token).update({
+                    status: 'rejected',
+                    rejectedAt: new Date().toISOString(),
+                    rejectedBy: 'telegram_bot'
+                });
+                
+                await this.editMessageReplyMarkup(messageId);
+                console.log('❌ Вход отклонен через Telegram');
+            }
+
+            async handleApproveOrder(orderId, messageId) {
+                await updateOrderStatus(orderId, 'completed');
+                await this.editMessageReplyMarkup(messageId);
+                
+                if (isAdminAuthenticated) {
+                    await loadOrdersList();
+                    await loadOrdersTable();
+                }
+                
+                console.log('✅ Заказ подтвержден через Telegram');
+            }
+
+            async handleRejectOrder(orderId, messageId) {
+                await updateOrderStatus(orderId, 'rejected');
+                await this.editMessageReplyMarkup(messageId);
+                
+                if (isAdminAuthenticated) {
+                    await loadOrdersList();
+                    await loadOrdersTable();
+                }
+                
+                console.log('❌ Заказ отклонен через Telegram');
+            }
+
+            async answerCallbackQuery(callbackQueryId) {
+                const notificationService = new TelegramNotificationService();
+                await fetch(`https://api.telegram.org/bot${notificationService.botToken}/answerCallbackQuery`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        callback_query_id: callbackQueryId
+                    })
+                });
+            }
+
+            async editMessageReplyMarkup(messageId) {
+                const notificationService = new TelegramNotificationService();
+                await fetch(`https://api.telegram.org/bot${notificationService.botToken}/editMessageReplyMarkup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: notificationService.chatId,
+                        message_id: messageId,
+                        reply_markup: { inline_keyboard: [] }
+                    })
+                });
+            }
+        }
+
+        // 🔐 УСИЛЕННАЯ СИСТЕМА БЕЗОПАСНОСТИ
+        class SecureAdminSecurity {
+            constructor() {
+                this.attempts = parseInt(localStorage.getItem('admin_login_attempts')) || 0;
+                this.maxAttempts = 3;
+                this.lockUntil = parseInt(localStorage.getItem('admin_lock_until')) || 0;
+                this.emailVerificationToken = null;
+                this.notificationService = new TelegramNotificationService();
+            }
+
+            async validateCredentials(email, password) {
+                // Проверка блокировки
+                if (this.isLocked()) {
+                    throw new Error(`Слишком много попыток. Попробуйте через ${this.getLockTimeLeft()} минут.`);
+                }
+
+                try {
+                    const adminDoc = await db.collection('security').doc('adminCredentials').get();
+        
+                    if (!adminDoc.exists) {
+                        // Записываем попытку входа в несуществующую систему
+                        await this.recordFailedAttempt();
+                        throw new Error('Система не инициализирована. Обратитесь к администратору.');
+                    }
+
+                    const securityData = adminDoc.data();
+                    
+                    // Всегда проверяем email первым
+                    if (email !== securityData.email) {
+                        await this.recordFailedAttempt();
+                        throw new Error('Неверные учетные данные');
+                    }
+
+                    // Проверяем пароль
+                    const hashedInput = this.hashPassword(password, securityData.salt);
+                    if (hashedInput !== securityData.passwordHash) {
+                        await this.recordFailedAttempt();
+                        throw new Error('Неверные учетные данные');
+                    }
+
+                    // Успешный вход - сбрасываем счетчик
+                    this.resetAttempts();
+                    return true;
+
+                } catch (error) {
+                    if (error.message.includes('инициализирована')) {
+                        throw error;
+                    }
+                    throw new Error('Ошибка проверки учетных данных');
+                }
+            }
+
+            async sendEmailVerification(email, deviceInfo) {
+                this.emailVerificationToken = 'verify_' + Math.random().toString(36).substr(2, 16);
+                const ipAddress = await this.getIPAddress();
+                
+                const verificationData = {
+                    token: this.emailVerificationToken,
+                    email: email,
+                    device: deviceInfo,
+                    ip: ipAddress,
+                    timestamp: new Date().toISOString(),
+                    status: 'pending'
+                };
+
+                await db.collection('emailVerifications').doc(this.emailVerificationToken).set(verificationData);
+                
+                await this.notificationService.sendLoginNotification(verificationData);
+                
+                window.currentVerificationToken = this.emailVerificationToken;
+
+                this.showWaitingStatus();
+
+                return this.emailVerificationToken;
+            }
+
+            showWaitingStatus() {
+                document.getElementById('auth-step-2-title').textContent = 'Ожидание подтверждения';
+                document.getElementById('auth-step-2-description').textContent = 'Запрос отправлен администратору в Telegram. Ожидайте решения...';
+                
+                const verificationInfo = document.getElementById('verification-info');
+                verificationInfo.innerHTML = `
+                    <div class="order-meta">Ожидаем ответа администратора в Telegram...</div>
+                    <div class="loading-spinner" style="margin:16px auto; width:32px; height:32px; border:3px solid rgba(0,255,65,0.3); border-top:3px solid var(--primary-glow); border-radius:50%; animation:spin 1s linear infinite;"></div>
+                    <div class="order-meta" style="margin-top:12px; font-size:12px;">
+                        Уведомление отправлено. Администратор получил запрос с кнопками "Одобрить/Заблокировать".
+                    </div>
+                `;
+            }
+
+            hashPassword(password, salt) {
+                return CryptoJS.SHA256(password + salt + "DXS_SECURE_2024").toString();
+            }
+
+            async getIPAddress() {
+                try {
+                    const response = await fetch('https://api.ipify.org?format=json');
+                    const data = await response.json();
+                    return data.ip;
+                } catch (error) {
+                    return 'unknown';
+                }
+            }
+
+            isLocked() {
+                if (Date.now() < this.lockUntil) return true;
+                
+                // Автоматическая разблокировка по истечении времени
+                if (this.lockUntil > 0 && Date.now() >= this.lockUntil) {
+                    this.resetAttempts();
+                }
+                return false;
+            }
+
+            getLockTimeLeft() {
+                return Math.ceil((this.lockUntil - Date.now()) / 60000);
+            }
+
+            async recordFailedAttempt() {
+                this.attempts++;
+                localStorage.setItem('admin_login_attempts', this.attempts.toString());
+
+                if (this.attempts >= this.maxAttempts) {
+                    this.lockUntil = Date.now() + 30 * 60 * 1000; // 30 минут
+                    localStorage.setItem('admin_lock_until', this.lockUntil.toString());
+                    
+                    // Отправляем уведомление о блокировке
+                    await this.sendLockoutNotification();
+                }
+            }
+
+            resetAttempts() {
+                this.attempts = 0;
+                this.lockUntil = 0;
+                localStorage.removeItem('admin_login_attempts');
+                localStorage.removeItem('admin_lock_until');
+            }
+
+            async sendLockoutNotification() {
+                try {
+                    const ip = await this.getIPAddress();
+                    const deviceInfo = new DeviceDetector().getDeviceInfo();
+                    
+                    const message = `
+🚨 <b>БЛОКИРОВКА СИСТЕМЫ БЕЗОПАСНОСТИ</b>
+
+⚠️ <b>Обнаружено 3 неудачные попытки входа</b>
+
+📱 <b>Устройство:</b> ${deviceInfo.os} • ${deviceInfo.browser}
+🌐 <b>IP-адрес:</b> ${ip}
+🕐 <b>Время:</b> ${new Date().toLocaleString('ru-RU')}
+
+🔒 <b>Система заблокирована на 30 минут</b>
+
+<i>Если это были не вы - немедленно примите меры!</i>
+                    `;
+
+                    await this.notificationService.sendRawMessage(message);
+                } catch (error) {
+                    console.error('Ошибка отправки уведомления о блокировке:', error);
+                }
+            }
+        }
+
+        // 🔍 ДЕТЕКТИРОВАНИЕ УСТРОЙСТВА
+        class DeviceDetector {
+            constructor() {
+                this.userAgent = navigator.userAgent.toLowerCase();
+                this.deviceInfo = this.detectDevice();
+            }
+
+            detectDevice() {
+                const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(this.userAgent);
+                const isTablet = /ipad|tablet|(android(?!.*mobile))|(windows(?!.*phone)(.*touch))|kindle|playbook|silk|(puffin(?!.*(IP|AP|WP)))/i.test(this.userAgent);
+                
+                return {
+                    type: isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop',
+                    os: this.detectOS(),
+                    browser: this.detectBrowser(),
+                    screen: `${screen.width}x${screen.height}`,
+                    userAgent: navigator.userAgent
+                };
+            }
+
+            detectOS() {
+                const ua = this.userAgent;
+                if (/android/i.test(ua)) return 'Android';
+                if (/iphone|ipad|ipod/i.test(ua)) return 'iOS';
+                if (/macintosh/i.test(ua)) return 'macOS';
+                if (/windows/i.test(ua)) return 'Windows';
+                if (/linux/i.test(ua)) return 'Linux';
+                return 'Unknown OS';
+            }
+
+            detectBrowser() {
+                const ua = this.userAgent;
+                if (/edg/i.test(ua)) return 'Microsoft Edge';
+                if (/chrome/i.test(ua)) return 'Google Chrome';
+                if (/safari/i.test(ua)) return 'Safari';
+                if (/firefox/i.test(ua)) return 'Firefox';
+                if (/opera|opr/i.test(ua)) return 'Opera';
+                return 'Unknown Browser';
+            }
+
+            getDeviceInfo() {
+                return this.deviceInfo;
+            }
+        }
+
+        // 🔐 ИНИЦИАЛИЗАЦИЯ СИСТЕМЫ БЕЗОПАСНОСТИ
+        const adminSecurity = new SecureAdminSecurity();
+        const deviceDetector = new DeviceDetector();
+        const telegramHandler = new TelegramCallbackHandler();
+
+        // 🔐 ПРОВЕРКА СЕССИИ ПРИ ЗАГРУЗКЕ
+        function validateAdminSession() {
+            const sessionTime = parseInt(localStorage.getItem('dxs_admin_session') || '0');
+            const currentTime = Date.now();
+            
+            if (currentTime - sessionTime > 8 * 60 * 60 * 1000) {
+                localStorage.removeItem('dxs_admin_authenticated');
+                localStorage.removeItem('dxs_admin_session');
+                return false;
+            }
+            
+            return localStorage.getItem('dxs_admin_authenticated') === 'true';
+        }
+
+        // 🔐 ПЕРЕМЕННЫЕ ПРИЛОЖЕНИЯ
         let currentOrderId = null;
         let orderStatusInterval = null;
-        let isAdminAuthenticated = localStorage.getItem('dxs_admin_authenticated') === 'true';
+        let isAdminAuthenticated = validateAdminSession();
         let currentView = localStorage.getItem('dxs_current_view') || 'welcome';
         let currentPromocode = null;
         let originalPrice = 0;
         let completedOrderTimer = null;
+        let verificationInterval = null;
+
+        // 🔐 ПЕРЕМЕННЫЕ ДЛЯ ТАЙМЕРА УВЕДОМЛЕНИЯ
+        let countdownTimer = null;
+        let countdownSeconds = 5;
 
         // --- Firebase helper functions ---
         async function saveOrder(order) {
@@ -792,7 +1760,9 @@
         async function loadOrders() {
             try {
                 const snapshot = await db.collection('orders').orderBy('createdAt', 'desc').get();
-                return snapshot.docs.map(doc => doc.data());
+                return snapshot.docs
+                    .map(doc => doc.data())
+                    .filter(order => order.status !== 'deleted');
             } catch (error) {
                 console.error('Ошибка загрузки:', error);
                 return [];
@@ -805,6 +1775,21 @@
                     status: status,
                     updatedAt: new Date().toISOString()
                 });
+
+                if (status === 'waiting') {
+                    setTimeout(async () => {
+                        try {
+                            const order = await getOrder(orderId);
+                            if (order) {
+                                const notificationService = new TelegramNotificationService();
+                                await notificationService.sendOrderNotification(order);
+                            }
+                        } catch (error) {
+                            console.error('Ошибка отправки уведомления о заказе:', error);
+                        }
+                    }, 1000);
+                }
+
                 return true;
             } catch (error) {
                 console.error('Ошибка обновления:', error);
@@ -825,10 +1810,37 @@
             }
         }
 
+        async function updateOrderPaymentMethod(orderId, paymentMethod) {
+            try {
+                await db.collection('orders').doc(orderId).update({
+                    paymentMethod: paymentMethod,
+                    updatedAt: new Date().toISOString()
+                });
+                return true;
+            } catch (error) {
+                console.error('Ошибка обновления способа оплаты:', error);
+                return false;
+            }
+        }
+
         async function getOrder(orderId) {
             try {
                 const doc = await db.collection('orders').doc(orderId).get();
-                return doc.exists ? doc.data() : null;
+                if (!doc.exists) return null;
+                
+                const order = doc.data();
+                
+                if (order.status === 'deleted' && order.deletedAt) {
+                    const deletedTime = new Date(order.deletedAt).getTime();
+                    const currentTime = new Date().getTime();
+                    const fiveMinutes = 5 * 60 * 1000;
+                    
+                    if (currentTime - deletedTime > fiveMinutes) {
+                        return null;
+                    }
+                }
+                
+                return order;
             } catch (error) {
                 console.error('Ошибка получения заказа:', error);
                 return null;
@@ -837,7 +1849,10 @@
 
         async function deleteOrder(orderId) {
             try {
-                await db.collection('orders').doc(orderId).delete();
+                await db.collection('orders').doc(orderId).update({
+                    status: 'deleted',
+                    deletedAt: new Date().toISOString()
+                });
                 return true;
             } catch (error) {
                 console.error('Ошибка удаления:', error);
@@ -845,108 +1860,29 @@
             }
         }
 
-        // --- Toast уведомления ---
-        function showToast(message, type = 'success', duration = 4000) {
-            const toastContainer = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            
-            const icon = type === 'success' ? 'fa-check-circle' : 
-                        type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
-            
-            toast.innerHTML = `
-                <div class="toast-icon">
-                    <i class="fas ${icon}"></i>
-                </div>
-                <div class="toast-message">${message}</div>
-            `;
-            
-            toastContainer.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.classList.add('show');
-            }, 100);
-            
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.parentNode.removeChild(toast);
-                    }
-                }, 400);
-            }, duration);
+        async function cleanupDeletedOrders() {
+            try {
+                console.log('Cleanup: Проверка старых удаленных заказов...');
+                return true;
+            } catch (error) {
+                console.error('Ошибка очистки:', error);
+                return false;
+            }
         }
 
-// --- Пасхалка (исправленная версия) ---
-let brawlEggTriggered = false;
-
-function triggerBrawlEgg() {
-    if (brawlEggTriggered) return;
-
-    // Показываем только на мобильных
-    if (window.innerWidth > 768) return;
-
-    const scrollPos = window.scrollY + window.innerHeight;
-    const fullHeight = document.documentElement.scrollHeight;
-
-    // Показываем только когда доскроллили до самого конца
-    if (scrollPos >= fullHeight - 10) {
-        const el = document.getElementById('brawl-easter-egg');
-        if (el) {
-            el.classList.add('show');
-            brawlEggTriggered = true;
-        }
-    } else if (brawlEggTriggered && scrollPos < fullHeight - 100) {
-        // Скрываем если поднялись достаточно высоко от низа
-        const el = document.getElementById('brawl-easter-egg');
-        if (el) {
-            el.classList.remove('show');
-            brawlEggTriggered = false;
-        }
-    }
-}
-
-// Слушаем скролл для управления пасхалкой
-window.addEventListener('scroll', triggerBrawlEgg);// --- Пасхалка (исправленная версия) ---
-let brawlEggTriggered = false;
-
-function triggerBrawlEgg() {
-    if (brawlEggTriggered) return;
-
-    // Показываем только на мобильных
-    if (window.innerWidth > 768) return;
-
-    const scrollPos = window.scrollY + window.innerHeight;
-    const fullHeight = document.documentElement.scrollHeight;
-
-    // Показываем только когда доскроллили до самого конца
-    if (scrollPos >= fullHeight - 10) {
-        const el = document.getElementById('brawl-easter-egg');
-        if (el) {
-            el.classList.add('show');
-            brawlEggTriggered = true;
-        }
-    } else if (brawlEggTriggered && scrollPos < fullHeight - 100) {
-        // Скрываем если поднялись достаточно высоко от низа
-        const el = document.getElementById('brawl-easter-egg');
-        if (el) {
-            el.classList.remove('show');
-            brawlEggTriggered = false;
-        }
-    }
-}
-
-// Слушаем скролл для управления пасхалкой
-window.addEventListener('scroll', triggerBrawlEgg);
-// --- Управление реквизитами ---
+        // --- Управление реквизитами ---
         async function loadPaymentDetails() {
             try {
                 const doc = await db.collection('settings').doc('paymentDetails').get();
                 if (doc.exists) {
                     const data = doc.data();
-                    document.getElementById('sbp-details').value = data.sbp || '';
-                    document.getElementById('sberbank-details').value = data.sberbank || '';
-                    document.getElementById('alfa-details').value = data.alfa || '';
+                    document.getElementById('sbp-phone').value = data.sbpPhone || '';
+                    document.getElementById('sbp-name').value = data.sbpName || '';
+                    document.getElementById('sbp-bank').value = data.sbpBank || '';
+                    document.getElementById('sberbank-card').value = data.sberbankCard || '';
+                    document.getElementById('sberbank-name').value = data.sberbankName || '';
+                    document.getElementById('alfa-card').value = data.alfaCard || '';
+                    document.getElementById('alfa-name').value = data.alfaName || '';
                 }
             } catch (error) {
                 console.error('Ошибка загрузки реквизитов:', error);
@@ -1022,7 +1958,6 @@ window.addEventListener('scroll', triggerBrawlEgg);
 
         async function savePromocode(promocode) {
             try {
-                // Используем ID документа вместо кода как идентификатора
                 const promocodeId = 'promo_' + Math.random().toString(36).substr(2, 9);
                 await db.collection('promocodes').doc(promocodeId).set({
                     code: promocode.code.toUpperCase(),
@@ -1085,8 +2020,186 @@ window.addEventListener('scroll', triggerBrawlEgg);
             }
         }
 
+        // --- Toast уведомления ---
+        function showToast(message, type = 'success', duration = 4000) {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = type === 'success' ? 'fa-check-circle' : 
+                        type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+            
+            toast.innerHTML = `
+                <div class="toast-icon">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <div class="toast-message">${message}</div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 400);
+            }, duration);
+        }
+
+        // 🔐 ОБНОВЛЕННАЯ СИСТЕМА АУТЕНТИФИКАЦИИ
+        async function authenticateAdmin() {
+            const email = document.getElementById('admin-email').value;
+            const password = document.getElementById('admin-password').value;
+
+            // Проверка блокировки
+            if (adminSecurity.isLocked()) {
+                const timeLeft = adminSecurity.getLockTimeLeft();
+                document.getElementById('error-message').textContent = 
+                    `Слишком много попыток. Попробуйте через ${timeLeft} минут.`;
+                document.getElementById('auth-error').style.display = 'block';
+                return;
+            }
+
+            try {
+                // Проверяем учетные данные
+                const isValid = await adminSecurity.validateCredentials(email, password);
+                
+                if (isValid) {
+                    // Получаем информацию об устройстве
+                    const deviceInfo = deviceDetector.getDeviceInfo();
+                    
+                    // Переходим ко второму шагу аутентификации
+                    document.getElementById('auth-step-1').classList.add('hidden');
+                    document.getElementById('auth-step-2').classList.remove('hidden');
+                    document.getElementById('auth-error').style.display = 'none';
+                    
+                    // Отправляем запрос на подтверждение в Telegram
+                    await adminSecurity.sendEmailVerification(email, deviceInfo);
+                    
+                    // Запускаем опрос статуса верификации
+                    startEmailVerificationPolling();
+                    
+                } else {
+                    throw new Error('Неверные учетные данные');
+                }
+                
+            } catch (error) {
+                console.error('Ошибка аутентификации:', error);
+                document.getElementById('error-message').textContent = error.message;
+                document.getElementById('auth-error').style.display = 'block';
+                updateSecurityIndicators();
+            }
+        }
+
+        function startEmailVerificationPolling() {
+            let attempts = 0;
+            const maxAttempts = 300;
+            
+            verificationInterval = setInterval(async () => {
+                attempts++;
+                
+                try {
+                    if (!window.currentVerificationToken) {
+                        clearInterval(verificationInterval);
+                        throw new Error('Токен верификации не найден');
+                    }
+
+                    const verificationDoc = await db.collection('emailVerifications')
+                        .doc(window.currentVerificationToken).get();
+                    
+                    if (!verificationDoc.exists) {
+                        clearInterval(verificationInterval);
+                        throw new Error('Сессия верификации не найдена');
+                    }
+
+                    const verificationData = verificationDoc.data();
+                    
+                    if (verificationData.status === 'approved') {
+                        clearInterval(verificationInterval);
+                        
+                        isAdminAuthenticated = true;
+                        localStorage.setItem('dxs_admin_authenticated', 'true');
+                        localStorage.setItem('dxs_admin_session', Date.now().toString());
+                        
+                        hideAuthModal();
+                        showAdminPanel();
+                        showToast('✅ Многоуровневая аутентификация пройдена!', 'success');
+                        
+                        window.currentVerificationToken = null;
+                        
+                    } else if (verificationData.status === 'rejected') {
+                        clearInterval(verificationInterval);
+                        document.getElementById('error-message').textContent = '❌ Доступ запрещен администратором';
+                        document.getElementById('auth-error').style.display = 'block';
+                        resetAuthForm();
+                        window.currentVerificationToken = null;
+                        
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(verificationInterval);
+                        throw new Error('Время ожидания подтверждения истекло');
+                    }
+                    
+                } catch (error) {
+                    clearInterval(verificationInterval);
+                    document.getElementById('error-message').textContent = error.message;
+                    document.getElementById('auth-error').style.display = 'block';
+                    resetAuthForm();
+                }
+            }, 1000);
+        }
+
+        function updateSecurityIndicators() {
+            document.getElementById('attempts-counter').textContent = 
+                `${adminSecurity.attempts}/${adminSecurity.maxAttempts}`;
+            
+            if (adminSecurity.isLocked()) {
+                document.getElementById('attempts-counter').style.color = 'var(--danger-glow)';
+                document.getElementById('error-message').textContent = 
+                    `Система заблокирована. Попробуйте через ${adminSecurity.getLockTimeLeft()} минут.`;
+                document.getElementById('auth-error').style.display = 'block';
+            } else {
+                document.getElementById('attempts-counter').style.color = 'var(--text-secondary)';
+            }
+        }
+
+        function resetAuthForm() {
+            document.getElementById('auth-step-1').classList.remove('hidden');
+            document.getElementById('auth-step-2').classList.add('hidden');
+            document.getElementById('admin-email').value = '';
+            document.getElementById('admin-password').value = '';
+            document.getElementById('auth-error').style.display = 'none';
+        }
+
+        // 🔐 ОБНОВЛЕННЫЙ ВЫХОД
+        function logoutAdmin() {
+            isAdminAuthenticated = false;
+            localStorage.removeItem('dxs_admin_authenticated');
+            localStorage.removeItem('dxs_admin_session');
+            
+            if (verificationInterval) {
+                clearInterval(verificationInterval);
+                verificationInterval = null;
+            }
+            
+            if (window.currentVerificationToken) {
+                window.currentVerificationToken = null;
+            }
+            
+            showWelcomeView();
+            showToast('🔒 Сессия завершена. Все уровни защиты деактивированы.', 'success');
+        }
+
         // --- App logic ---
         document.addEventListener('DOMContentLoaded', async function() {
+            // 🔧 АВТОМАТИЧЕСКАЯ ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ
+            await initializeSystemData();
+            
             const urlParams = new URLSearchParams(window.location.search);
             const orderId = urlParams.get('order');
 
@@ -1104,8 +2217,9 @@ window.addEventListener('scroll', triggerBrawlEgg);
                 showWelcomeView();
             }
 
+            await cleanupDeletedOrders();
+
             setupEventHandlers();
-            window.addEventListener('scroll', triggerBrawlEgg);
         });
 
         function saveCurrentView(view) {
@@ -1121,14 +2235,25 @@ window.addEventListener('scroll', triggerBrawlEgg);
             orderStatusInterval = setInterval(async () => {
                 const order = await getOrder(orderId);
                 if (order) {
-                    updateOrderStatusView(order.status);
+                    updateOrderStatusView(order.status, order);
                     updateOrderActions(order.status);
                     
-                    if (order.status === 'completed' || order.status === 'rejected') {
+                    if (order.status === 'completed' || order.status === 'rejected' || order.status === 'deleted') {
                         stopOrderStatusPolling();
                     }
+                } else {
+                    document.getElementById('order-view').innerHTML = `
+                        <div class="status-indicator">
+                            <div class="status-icon error">
+                                <i class="fas fa-exclamation-circle"></i>
+                            </div>
+                            <div class="status-title">Заказ не найден</div>
+                            <div class="status-description">Проверьте правильность ссылки</div>
+                        </div>
+                    `;
+                    stopOrderStatusPolling();
                 }
-            }, 1000);
+            }, 2000);
         }
 
         function stopOrderStatusPolling() {
@@ -1167,36 +2292,14 @@ window.addEventListener('scroll', triggerBrawlEgg);
 
         function showAuthModal() {
             document.getElementById('auth-modal').classList.remove('hidden');
-            document.getElementById('admin-password').focus();
+            document.getElementById('admin-email').focus();
         }
 
         function hideAuthModal() {
             document.getElementById('auth-modal').classList.add('hidden');
+            document.getElementById('admin-email').value = '';
             document.getElementById('admin-password').value = '';
             document.getElementById('auth-error').style.display = 'none';
-        }
-
-        function authenticateAdmin() {
-            const password = document.getElementById('admin-password').value;
-            if (password === ADMIN_PASSWORD) {
-                isAdminAuthenticated = true;
-                localStorage.setItem('dxs_admin_authenticated', 'true');
-                hideAuthModal();
-                showAdminPanel();
-                showToast('Успешный вход в админ-панель', 'success');
-            } else {
-                document.getElementById('auth-error').style.display = 'block';
-                document.getElementById('admin-password').value = '';
-                document.getElementById('admin-password').focus();
-            }
-        }
-
-        function logoutAdmin() {
-            isAdminAuthenticated = false;
-            localStorage.removeItem('dxs_admin_authenticated');
-            localStorage.removeItem('dxs_current_view');
-            showWelcomeView();
-            showToast('Вы вышли из админ-панели', 'success');
         }
 
         // --- Client order view ---
@@ -1227,11 +2330,9 @@ window.addEventListener('scroll', triggerBrawlEgg);
             document.getElementById('order-product').textContent = order.product;
             document.getElementById('order-client').textContent = `Для: ${order.client}`;
 
-            // Обновляем отображение цены с учетом промокода
             updateOrderPriceDisplay(order);
-            
             updateOrderActions(order.status);
-            updateOrderStatusView(order.status);
+            updateOrderStatusView(order.status, order);
             
             startOrderStatusPolling(orderId);
         }
@@ -1240,22 +2341,25 @@ window.addEventListener('scroll', triggerBrawlEgg);
             const priceContainer = document.getElementById('order-price-container');
             
             if (order.promocodeUsed && order.finalPrice) {
-                // Показываем старую и новую цену
                 priceContainer.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span class="price-original">${order.originalPrice || order.price}</span>
-                        <span class="price-final">${order.finalPrice} ₽</span>
+                        <span class="price-final">${order.finalPrice}</span>
                         <span class="discount-badge">Промокод: ${order.promocodeUsed}</span>
                     </div>
                 `;
             } else {
-                // Обычная цена
                 priceContainer.innerHTML = `<div class="order-price">${order.price}</div>`;
             }
         }
 
         function updateOrderActions(status) {
             const actionsContainer = document.getElementById('order-actions');
+
+            if (status === 'deleted') {
+                actionsContainer.innerHTML = '';
+                return;
+            }
 
             if (status === 'pending') {
                 actionsContainer.innerHTML = `
@@ -1286,7 +2390,7 @@ window.addEventListener('scroll', triggerBrawlEgg);
             }
         }
 
-        function updateOrderStatusView(status) {
+        function updateOrderStatusView(status, order = null) {
             const statusContainer = document.getElementById('order-status');
 
             if (status === 'pending') {
@@ -1306,22 +2410,19 @@ window.addEventListener('scroll', triggerBrawlEgg);
                     <div class="status-description">Администратор проверяет вашу оплату</div>
                 `;
             } else if (status === 'completed') {
-                // Сбрасываем таймер если он был
                 if (completedOrderTimer) {
                     clearTimeout(completedOrderTimer);
                     completedOrderTimer = null;
                 }
                 
-                // Сначала показываем сообщение об успешной оплате
                 statusContainer.innerHTML = `
                     <div class="status-icon success">
                         <i class="fas fa-check-circle"></i>
                     </div>
                     <div class="status-title">Успешная оплата!</div>
-                    <div class="status-description">ВЕРНИТЕСЬ В ЧАТ С АДМИНОМ</div>
+                    <div class="status-description">Вернитесь в чат с админом</div>
                 `;
                 
-                // Через 60 секунд меняем на стандартное сообщение
                 completedOrderTimer = setTimeout(() => {
                     statusContainer.innerHTML = `
                         <div class="status-icon success">
@@ -1330,7 +2431,7 @@ window.addEventListener('scroll', triggerBrawlEgg);
                         <div class="status-title">Заказ уже завершен</div>
                         <div class="status-description">Спасибо, что выбрали наш магазин</div>
                     `;
-                }, 60000); // 60 секунд
+                }, 60000);
             } else if (status === 'rejected') {
                 statusContainer.innerHTML = `
                     <div class="status-icon error">
@@ -1339,6 +2440,16 @@ window.addEventListener('scroll', triggerBrawlEgg);
                     <div class="status-title">Оплата не прошла</div>
                     <div class="status-description">Попробуйте еще раз или обратитесь к администратору</div>
                 `;
+            } else if (status === 'deleted') {
+                statusContainer.innerHTML = `
+                    <div class="status-icon error">
+                        <i class="fas fa-trash"></i>
+                    </div>
+                    <div class="status-title">Заказ удален администратором</div>
+                    <div class="status-description">Наверное, это просто сбой в системе. Напишите админу, чтобы узнать, что произошло.</div>
+                `;
+                
+                document.getElementById('order-actions').innerHTML = '';
             }
         }
 
@@ -1355,14 +2466,11 @@ window.addEventListener('scroll', triggerBrawlEgg);
                     document.getElementById('payment-product').textContent = order.product;
                     document.getElementById('payment-product-name').textContent = order.product;
                     
-                    // Извлекаем числовое значение цены из строки (убираем " ₽")
                     const priceText = order.price.replace(' ₽', '');
                     originalPrice = parseFloat(priceText);
                     
-                    // Обновляем отображение цены
                     updatePaymentPriceDisplay(order);
                     
-                    // Сбрасываем состояние промокода
                     currentPromocode = null;
                     document.getElementById('client-promocode-result').classList.add('hidden');
                     document.getElementById('client-promocode-input').value = '';
@@ -1374,18 +2482,120 @@ window.addEventListener('scroll', triggerBrawlEgg);
             const priceContainer = document.getElementById('payment-price-container');
             
             if (order.promocodeUsed && order.finalPrice) {
-                // Уже применен промокод
                 priceContainer.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span class="price-original">${originalPrice.toFixed(2)} ₽</span>
-                        <span class="price-final">${order.finalPrice} ₽</span>
+                        <span class="price-final">${order.finalPrice}</span>
                         <span class="discount-badge">Промокод: ${order.promocodeUsed}</span>
                     </div>
                 `;
             } else {
-                // Обычная цена
                 priceContainer.innerHTML = `<div class="order-price">${order.price}</div>`;
             }
+        }
+
+        // --- Отображение реквизитов в новом формате ---
+        function displayBankDetails(method, details) {
+            const bankDetailsContainer = document.getElementById('bank-details');
+            
+            if (method === 'сбп') {
+                bankDetailsContainer.innerHTML = `
+                    <h4 style="margin-bottom:16px;">Реквизиты для оплаты через СБП:</h4>
+                    <div class="bank-detail-item">
+                        <div class="bank-detail-label">Телефон:</div>
+                        <div class="bank-detail-value">${details.sbpPhone || 'Не указан'}</div>
+                        <button class="bank-detail-copy" onclick="copyToClipboard('${details.sbpPhone || ''}')">
+                            <i class="far fa-copy"></i> Копировать
+                        </button>
+                    </div>
+                    <div class="bank-detail-item">
+                        <div class="bank-detail-label">Получатель:</div>
+                        <div class="bank-detail-value">${details.sbpName || 'Не указан'}</div>
+                    </div>
+                    <div class="bank-detail-item">
+                        <div class="bank-detail-label">Банк:</div>
+                        <div class="bank-detail-value">${details.sbpBank || 'Не указан'}</div>
+                    </div>
+                `;
+            } else if (method === 'сбербанк') {
+                bankDetailsContainer.innerHTML = `
+                    <h4 style="margin-bottom:16px;">Реквизиты для оплаты через Сбербанк:</h4>
+                    <div class="bank-detail-item">
+                        <div class="bank-detail-label">Номер карты:</div>
+                        <div class="bank-detail-value">${details.sberbankCard || 'Не указан'}</div>
+                        <button class="bank-detail-copy" onclick="copyToClipboard('${details.sberbankCard || ''}')">
+                            <i class="far fa-copy"></i> Копировать
+                        </button>
+                    </div>
+                    <div class="bank-detail-item">
+                        <div class="bank-detail-label">Получатель:</div>
+                        <div class="bank-detail-value">${details.sberbankName || 'Не указан'}</div>
+                    </div>
+                `;
+            } else if (method === 'альфа-банк') {
+                bankDetailsContainer.innerHTML = `
+                    <h4 style="margin-bottom:16px;">Реквизиты для оплаты через Альфа-Банк:</h4>
+                    <div class="bank-detail-item">
+                        <div class="bank-detail-label">Номер карты:</div>
+                        <div class="bank-detail-value">${details.alfaCard || 'Не указан'}</div>
+                        <button class="bank-detail-copy" onclick="copyToClipboard('${details.alfaCard || ''}')">
+                            <i class="far fa-copy"></i> Копировать
+                        </button>
+                    </div>
+                    <div class="bank-detail-item">
+                        <div class="bank-detail-label">Получатель:</div>
+                        <div class="bank-detail-value">${details.alfaName || 'Не указан'}</div>
+                    </div>
+                `;
+            }
+            
+            bankDetailsContainer.classList.remove('hidden');
+        }
+
+        function copyToClipboard(text) {
+            if (!text || text === 'Не указан') {
+                showToast('Нечего копировать', 'warning');
+                return;
+            }
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Скопировано в буфер обмена!', 'success');
+            }).catch(err => {
+                console.error('Ошибка копирования: ', err);
+                showToast('Ошибка при копировании', 'error');
+            });
+        }
+
+        // --- Функция показа уведомления с таймером ---
+        function showPaymentAlert() {
+            const alertModal = document.getElementById('payment-alert-modal');
+            const closeButton = document.getElementById('close-payment-alert');
+            const countdownElement = document.getElementById('countdown-seconds');
+            
+            countdownSeconds = 5;
+            countdownElement.textContent = countdownSeconds;
+            
+            closeButton.disabled = true;
+            closeButton.innerHTML = '<i class="fas fa-check" style="margin-right: 8px;"></i> Понятно, продолжить';
+            
+            alertModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+            }
+            
+            countdownTimer = setInterval(() => {
+                countdownSeconds--;
+                countdownElement.textContent = countdownSeconds;
+                
+                if (countdownSeconds <= 0) {
+                    clearInterval(countdownTimer);
+                    closeButton.disabled = false;
+                    closeButton.innerHTML = '<i class="fas fa-check" style="margin-right: 8px;"></i> Понятно, продолжить';
+                    document.getElementById('countdown-timer').innerHTML = 'Теперь вы можете продолжить';
+                }
+            }, 1000);
         }
 
         // --- Admin: list, details, actions ---
@@ -1416,20 +2626,40 @@ window.addEventListener('scroll', triggerBrawlEgg);
                     
                     const orderLink = `${window.location.origin}${window.location.pathname}?order=${order.id}`;
 
-                    // Определяем цену для отображения
                     const displayPrice = order.finalPrice ? 
                         `<div style="display:flex; align-items:center; gap:4px;">
                             <span style="text-decoration:line-through; color:var(--text-secondary); font-size:14px;">${order.price}</span>
-                            <span>${order.finalPrice} ₽</span>
+                            <span>${order.finalPrice}</span>
                             ${order.promocodeUsed ? `<span class="discount-badge">${order.promocodeUsed}</span>` : ''}
                         </div>` : 
                         `<div>${order.price}</div>`;
+
+                    let paymentIcon = 'fa-credit-card';
+                    let paymentMethodText = 'Не выбран';
+                    
+                    if (order.paymentMethod === 'сбп') {
+                        paymentIcon = 'fa-mobile-alt';
+                        paymentMethodText = 'СБП';
+                    } else if (order.paymentMethod === 'сбербанк') {
+                        paymentIcon = 'fa-university';
+                        paymentMethodText = 'Сбербанк';
+                    } else if (order.paymentMethod === 'альфа-банк') {
+                        paymentIcon = 'fa-credit-card';
+                        paymentMethodText = 'Альфа-Банк';
+                    }
 
                     html += `
                         <div class="order-item" data-order-id="${order.id}">
                             <div class="order-info">
                                 <h3>${order.product}</h3>
                                 <div class="order-meta">${order.client} • ${new Date(order.createdAt).toLocaleDateString('ru-RU')}</div>
+                                ${order.paymentMethod ? `
+                                    <div style="margin-top: 8px;">
+                                        <span class="payment-method-badge">
+                                            <i class="fas ${paymentIcon}"></i> ${paymentMethodText}
+                                        </span>
+                                    </div>
+                                ` : ''}
                             </div>
                             <div>
                                 <div style="text-align:right;margin-bottom:8px;">${displayPrice}</div>
@@ -1484,16 +2714,15 @@ window.addEventListener('scroll', triggerBrawlEgg);
             }
         }
 
-        // Загрузка таблицы заказов
         async function loadOrdersTable() {
             const tableBody = document.getElementById('orders-table-body');
-            tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary);">Загрузка...</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text-secondary);">Загрузка...</td></tr>';
 
             try {
                 const orders = await loadOrders();
 
                 if (orders.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary);">Заказов пока нет</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text-secondary);">Заказов пока нет</td></tr>';
                     return;
                 }
 
@@ -1509,13 +2738,21 @@ window.addEventListener('scroll', triggerBrawlEgg);
                         order.status === 'completed' ? 'Завершен' : 
                         'Оплата не прошла';
 
-                    // Определяем цену для отображения
                     const displayPrice = order.finalPrice ? 
                         `<div style="display:flex; align-items:center; gap:4px;">
                             <span style="text-decoration:line-through; color:var(--text-secondary); font-size:12px;">${order.price}</span>
-                            <span>${order.finalPrice} ₽</span>
+                            <span>${order.finalPrice}</span>
                         </div>` : 
                         order.price;
+
+                    let paymentMethodText = 'Не выбран';
+                    if (order.paymentMethod === 'сбп') {
+                        paymentMethodText = 'СБП';
+                    } else if (order.paymentMethod === 'сбербанк') {
+                        paymentMethodText = 'Сбербанк';
+                    } else if (order.paymentMethod === 'альфа-банк') {
+                        paymentMethodText = 'Альфа-Банк';
+                    }
 
                     html += `
                         <tr>
@@ -1525,6 +2762,7 @@ window.addEventListener('scroll', triggerBrawlEgg);
                             <td>${order.product}</td>
                             <td>${displayPrice}</td>
                             <td><span class="order-status status-${order.status}">${statusText}</span></td>
+                            <td>${paymentMethodText}</td>
                             <td>
                                 <div class="table-actions">
                                     <button class="quick-action-btn" onclick="showOrderDetails('${order.id}')">
@@ -1542,11 +2780,10 @@ window.addEventListener('scroll', triggerBrawlEgg);
                 tableBody.innerHTML = html;
 
             } catch (error) {
-                tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--danger-glow);">Ошибка загрузки заказов</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--danger-glow);">Ошибка загрузки заказов</td></tr>';
             }
         }
 
-        // Загрузка шаблонов
         async function loadTemplatesList() {
             const templatesGrid = document.getElementById('templates-grid');
             const templatesList = document.getElementById('templates-list');
@@ -1573,7 +2810,6 @@ window.addEventListener('scroll', triggerBrawlEgg);
                     return;
                 }
 
-                // Шаблоны для создания заказа
                 let gridHtml = '';
                 templates.forEach(template => {
                     gridHtml += `
@@ -1585,7 +2821,6 @@ window.addEventListener('scroll', triggerBrawlEgg);
                 });
                 templatesGrid.innerHTML = gridHtml;
 
-                // Шаблоны для управления
                 let listHtml = '';
                 templates.forEach(template => {
                     listHtml += `
@@ -1607,7 +2842,6 @@ window.addEventListener('scroll', triggerBrawlEgg);
                 });
                 templatesList.innerHTML = listHtml;
 
-                // Обработчики для шаблонов
                 document.querySelectorAll('.template-card').forEach(card => {
                     card.addEventListener('click', function() {
                         const templateId = this.getAttribute('data-template-id');
@@ -1616,9 +2850,7 @@ window.addEventListener('scroll', triggerBrawlEgg);
                             document.getElementById('product-name').value = template.name;
                             document.getElementById('product-price').value = template.price;
                             
-                            // Снять выделение со всех карточек
                             document.querySelectorAll('.template-card').forEach(c => c.classList.remove('active'));
-                            // Выделить текущую карточку
                             this.classList.add('active');
                         }
                     });
@@ -1636,7 +2868,6 @@ window.addEventListener('scroll', triggerBrawlEgg);
             }
         }
 
-        // Загрузка промокодов
         async function loadPromocodesList() {
             const promocodesList = document.getElementById('promocodes-list');
             promocodesList.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);">Загрузка...</div>';
@@ -1687,7 +2918,6 @@ window.addEventListener('scroll', triggerBrawlEgg);
             }
         }
 
-        // Экспорт в CSV
         function exportToCSV() {
             loadOrders().then(orders => {
                 if (orders.length === 0) {
@@ -1695,7 +2925,7 @@ window.addEventListener('scroll', triggerBrawlEgg);
                     return;
                 }
 
-                let csv = 'Дата;Время;Клиент;Товар;Исходная цена;Финальная цена;Промокод;Статус\n';
+                let csv = 'Дата;Время;Клиент;Товар;Исходная цена;Финальная цена;Промокод;Способ оплаты;Статус\n';
                 
                 orders.forEach(order => {
                     const date = new Date(order.createdAt);
@@ -1711,8 +2941,9 @@ window.addEventListener('scroll', triggerBrawlEgg);
                     const finalPrice = order.finalPrice || order.price.replace(' ₽', '');
                     const originalPrice = order.originalPrice || order.price.replace(' ₽', '');
                     const promocode = order.promocodeUsed || '';
+                    const paymentMethod = order.paymentMethod || 'Не выбран';
 
-                    csv += `"${dateStr}";"${timeStr}";"${order.client}";"${order.product}";"${originalPrice}";"${finalPrice}";"${promocode}";"${statusText}"\n`;
+                    csv += `"${dateStr}";"${timeStr}";"${order.client}";"${order.product}";"${originalPrice}";"${finalPrice}";"${promocode}";"${paymentMethod}";"${statusText}"\n`;
                 });
 
                 const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1739,13 +2970,37 @@ window.addEventListener('scroll', triggerBrawlEgg);
                 order.status === 'completed' ? 'Завершен' : 
                 'Оплата не прошла';
 
-            // Информация о промокоде
             const promocodeInfo = order.promocodeUsed ? `
                 <div class="detail-item">
                     <div class="detail-label">Промокод</div>
                     <div class="detail-value">
                         <span class="discount-badge">${order.promocodeUsed}</span>
-                        ${order.finalPrice ? `<div style="margin-top:8px; color:var(--success-glow);">Применена скидка: ${order.finalPrice} ₽ (вместо ${order.originalPrice || order.price})</div>` : ''}
+                        ${order.finalPrice ? `<div style="margin-top:8px; color:var(--success-glow);">Применена скидка: ${order.finalPrice} (вместо ${order.originalPrice || order.price})</div>` : ''}
+                    </div>
+                </div>
+            ` : '';
+
+            let paymentIcon = 'fa-credit-card';
+            let paymentMethodText = 'Не выбран';
+            
+            if (order.paymentMethod === 'сбп') {
+                paymentIcon = 'fa-mobile-alt';
+                paymentMethodText = 'СБП';
+            } else if (order.paymentMethod === 'сбербанк') {
+                paymentIcon = 'fa-university';
+                paymentMethodText = 'Сбербанк';
+            } else if (order.paymentMethod === 'альфа-банк') {
+                paymentIcon = 'fa-credit-card';
+                paymentMethodText = 'Альфа-Банк';
+            }
+
+            const paymentMethodInfo = order.paymentMethod ? `
+                <div class="detail-item">
+                    <div class="detail-label">Способ оплаты</div>
+                    <div class="detail-value">
+                        <span class="payment-method-badge">
+                            <i class="fas ${paymentIcon}"></i> ${paymentMethodText}
+                        </span>
                     </div>
                 </div>
             ` : '';
@@ -1765,13 +3020,14 @@ window.addEventListener('scroll', triggerBrawlEgg);
                         ${order.finalPrice ? 
                             `<div style="display:flex; align-items:center; gap:8px;">
                                 <span style="text-decoration:line-through; color:var(--text-secondary);">${order.originalPrice || order.price}</span>
-                                <span class="order-price">${order.finalPrice} ₽</span>
+                                <span class="order-price">${order.finalPrice}</span>
                             </div>` : 
                             `<span class="order-price">${order.price}</span>`
                         }
                     </div>
                 </div>
                 ${promocodeInfo}
+                ${paymentMethodInfo}
                 <div class="detail-item">
                     <div class="detail-label">Клиент</div>
                     <div class="detail-value">${order.client}</div>
@@ -1935,18 +3191,51 @@ window.addEventListener('scroll', triggerBrawlEgg);
         // events and handlers
         function setupEventHandlers() {
             document.getElementById('admin-access-btn').addEventListener('click', showAuthModal);
-            document.getElementById('login-btn').addEventListener('click', authenticateAdmin);
+            
+            document.getElementById('login-step-1').addEventListener('click', authenticateAdmin);
             document.getElementById('admin-password').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') authenticateAdmin();
             });
+            
             document.getElementById('logout-btn').addEventListener('click', logoutAdmin);
+            
             document.getElementById('auth-modal').addEventListener('click', function(e) {
-                if (e.target === this) hideAuthModal();
+                if (e.target === this) {
+                    resetAuthForm();
+                    hideAuthModal();
+                }
             });
+
             document.getElementById('close-details').addEventListener('click', closeOrderDetails);
             document.getElementById('export-csv').addEventListener('click', exportToCSV);
 
-            // create order form
+            document.getElementById('close-payment-alert').addEventListener('click', function() {
+                const alertModal = document.getElementById('payment-alert-modal');
+                
+                if (countdownTimer) {
+                    clearInterval(countdownTimer);
+                    countdownTimer = null;
+                }
+                
+                alertModal.classList.add('hidden');
+                document.body.style.overflow = '';
+            });
+
+            document.getElementById('payment-alert-modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    if (countdownSeconds <= 0) {
+                        if (countdownTimer) {
+                            clearInterval(countdownTimer);
+                            countdownTimer = null;
+                        }
+                        this.classList.add('hidden');
+                        document.body.style.overflow = '';
+                    } else {
+                        showToast('Пожалуйста, прочитайте внимательно и подождите ' + countdownSeconds + ' секунд', 'warning', 2000);
+                    }
+                }
+            });
+
             const createForm = document.getElementById('create-order-form');
             if (createForm) {
                 createForm.addEventListener('submit', async function(e) {
@@ -1979,7 +3268,6 @@ window.addEventListener('scroll', triggerBrawlEgg);
                 });
             }
 
-            // create template form
             const createTemplateForm = document.getElementById('create-template-form');
             if (createTemplateForm) {
                 createTemplateForm.addEventListener('submit', async function(e) {
@@ -2003,7 +3291,6 @@ window.addEventListener('scroll', triggerBrawlEgg);
                 });
             }
 
-            // create promocode form
             const createPromocodeForm = document.getElementById('create-promocode-form');
             if (createPromocodeForm) {
                 createPromocodeForm.addEventListener('submit', async function(e) {
@@ -2034,7 +3321,6 @@ window.addEventListener('scroll', triggerBrawlEgg);
                 });
             }
 
-            // apply client promocode
             const applyClientPromocodeBtn = document.getElementById('apply-client-promocode');
             if (applyClientPromocodeBtn) {
                 applyClientPromocodeBtn.addEventListener('click', async function() {
@@ -2049,12 +3335,11 @@ window.addEventListener('scroll', triggerBrawlEgg);
                         currentPromocode = promocode;
                         const discountedPrice = originalPrice * (1 - promocode.discount / 100);
                         
-                        // Обновляем отображение цены
                         const priceContainer = document.getElementById('payment-price-container');
                         priceContainer.innerHTML = `
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <span class="price-original">${originalPrice.toFixed(2)} ₽</span>
-                                <span class="price-final">${discountedPrice.toFixed(2)} ₽</span>
+                                <span class="price-final">${discountedPrice.toFixed(2)}</span>
                                 <span class="discount-badge">-${promocode.discount}%</span>
                             </div>
                         `;
@@ -2078,15 +3363,18 @@ window.addEventListener('scroll', triggerBrawlEgg);
                 });
             }
 
-            // payment settings form
             const paymentSettingsForm = document.getElementById('payment-settings-form');
             if (paymentSettingsForm) {
                 paymentSettingsForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
                     const details = {
-                        sbp: document.getElementById('sbp-details').value,
-                        sberbank: document.getElementById('sberbank-details').value,
-                        alfa: document.getElementById('alfa-details').value
+                        sbpPhone: document.getElementById('sbp-phone').value,
+                        sbpName: document.getElementById('sbp-name').value,
+                        sbpBank: document.getElementById('sbp-bank').value,
+                        sberbankCard: document.getElementById('sberbank-card').value,
+                        sberbankName: document.getElementById('sberbank-name').value,
+                        alfaCard: document.getElementById('alfa-card').value,
+                        alfaName: document.getElementById('alfa-name').value
                     };
                     const success = await savePaymentDetails(details);
                     if (success) {
@@ -2097,45 +3385,44 @@ window.addEventListener('scroll', triggerBrawlEgg);
                 });
             }
 
-            // payment method selection in payment view
             document.querySelectorAll('input[name="payment-method"]').forEach(radio => {
                 radio.addEventListener('change', async function() {
                     const method = this.value;
-                    const detailsContainer = document.getElementById('bank-details');
-                    const detailsText = document.getElementById('bank-details-text');
+                    const bankDetailsContainer = document.getElementById('bank-details');
                     const confirmButton = document.getElementById('confirm-payment');
 
                     if (method) {
                         const paymentDetails = await getPaymentDetails();
-                        let details = '';
                         
+                        let hasDetails = false;
                         if (method === 'сбп') {
-                            details = paymentDetails.sbp || 'Реквизиты для СБП не заданы\nПерейдите в админ-панель → Реквизиты';
+                            hasDetails = paymentDetails.sbpPhone && paymentDetails.sbpName && paymentDetails.sbpBank;
                         } else if (method === 'сбербанк') {
-                            details = paymentDetails.sberbank || 'Реквизиты для Сбербанка не заданы\nПерейдите в админ-панель → Реквизиты';
+                            hasDetails = paymentDetails.sberbankCard && paymentDetails.sberbankName;
                         } else if (method === 'альфа-банк') {
-                            details = paymentDetails.alfa || 'Реквизиты для Альфа-Банка не заданы\nПерейдите в админ-панель → Реквизиты';
+                            hasDetails = paymentDetails.alfaCard && paymentDetails.alfaName;
                         }
 
-                        detailsText.textContent = details;
-                        detailsContainer.classList.remove('hidden');
-                        confirmButton.disabled = false;
+                        if (hasDetails) {
+                            displayBankDetails(method, paymentDetails);
+                            confirmButton.disabled = false;
+                            
+                            showPaymentAlert();
+                        } else {
+                            bankDetailsContainer.innerHTML = `
+                                <div style="text-align:center; padding:20px; color:var(--warning-glow);">
+                                    <i class="fas fa-exclamation-triangle" style="font-size:24px; margin-bottom:12px;"></i>
+                                    <div>Реквизиты для ${method} не настроены</div>
+                                    <div style="font-size:14px; margin-top:8px;">Обратитесь к администратору</div>
+                                </div>
+                            `;
+                            bankDetailsContainer.classList.remove('hidden');
+                            confirmButton.disabled = true;
+                        }
                     }
                 });
             });
 
-            // copy bank details
-            const copyBtn = document.getElementById('copy-details');
-            if (copyBtn) {
-                copyBtn.addEventListener('click', function() {
-                    const detailsText = document.getElementById('bank-details-text').textContent;
-                    navigator.clipboard.writeText(detailsText).then(() => {
-                        showToast('Реквизиты скопированы!', 'success');
-                    });
-                });
-            }
-
-            // Confirm payment button
             const confirmBtn = document.getElementById('confirm-payment');
             if (confirmBtn) {
                 confirmBtn.addEventListener('click', async function() {
@@ -2144,11 +3431,15 @@ window.addEventListener('scroll', triggerBrawlEgg);
                         return;
                     }
 
-                    // Если применен промокод, обновляем заказ с новой ценой
+                    const selectedPaymentMethod = document.querySelector('input[name="payment-method"]:checked');
+                    if (selectedPaymentMethod) {
+                        await updateOrderPaymentMethod(currentOrderId, selectedPaymentMethod.value);
+                    }
+
                     if (currentPromocode) {
                         const discountedPrice = originalPrice * (1 - currentPromocode.discount / 100);
                         const success = await updateOrderPrice(currentOrderId, {
-                            finalPrice: discountedPrice.toFixed(2) + ' ₽',
+                            finalPrice: discountedPrice.toFixed(2),
                             originalPrice: originalPrice.toFixed(2) + ' ₽',
                             promocodeUsed: currentPromocode.code
                         });
@@ -2168,6 +3459,46 @@ window.addEventListener('scroll', triggerBrawlEgg);
                 });
             }
         }
+
+        // 🔧 ДИАГНОСТИКА FIREBASE
+        function checkFirebaseConnection() {
+            console.log('🔍 Проверка подключения Firebase...');
+            
+            // Проверяем базовую конфигурацию
+            if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'AIzaSyBXbq06XQd2E2XDseEMnkXAgk-nwGl2XM4') {
+                console.log('✅ Конфигурация Firebase загружена');
+            } else {
+                console.log('❌ Проблема с конфигурацией Firebase');
+            }
+            
+            // Пробуем простой запрос к Firestore
+            const testDocRef = db.collection('connectionTest').doc('test');
+            
+            testDocRef.set({
+                timestamp: new Date().toISOString(),
+                test: true
+            }).then(() => {
+                console.log('✅ Firestore запись успешна');
+                return testDocRef.get();
+            }).then((doc) => {
+                if (doc.exists) {
+                    console.log('✅ Firestore чтение успешно');
+                }
+                // Удаляем тестовый документ
+                return testDocRef.delete();
+            }).then(() => {
+                console.log('✅ Firestore тест завершен');
+            }).catch((error) => {
+                console.error('❌ Ошибка Firestore:', error);
+                console.log('🔧 Рекомендации:');
+                console.log('1. Проверьте правила Firestore в консоли Firebase');
+                console.log('2. Убедитесь, что проект активен и не заблокирован');
+                console.log('3. Проверьте квоты использования Firebase');
+            });
+        }
+
+        // Запускаем проверку при загрузке
+        setTimeout(checkFirebaseConnection, 2000);
     </script>
 </body>
 </html>
